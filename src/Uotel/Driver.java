@@ -1,54 +1,125 @@
 package Uotel;
 
 import java.util.Scanner;
+import java.sql.*;
+import java.io.*;
 
 public class Driver {
 	
 	public static void main(String[] args){
-		System.out.println("Welcome to Uotel!");
+	    System.out.println("Welcome to Uotel!");
+
+	    
+	    try{
+		Connector con = new Connector();
+		System.out.println("Now connected to database");
+		
+		
 		Scanner scanner = new Scanner (System.in);
 		System.out.println("Enter Username or '$r' to register:");
 		String user = scanner.nextLine();
 		if (user.equals("$r")){
-			// TODO handle registration
-			int name = 0;
-			System.out.println("Enter desired username:");
-			while (name == 0){
-				String desiredName = scanner.nextLine();
-				// check desiredName for uniqueness in DB
-				// placeholder if/else for DB check
-				int result = 1;
-				if (result == 0){
-					System.out.println("Desired username is not available, please try again:");
-				}
-				else {
-					break;
-				}
+		    // TODO handle registration
+		    //int name = 0;
+		    System.out.println("Enter desired username:");
+		    while (true){
+			String desiredName = scanner.nextLine();
+			// check desiredName for uniqueness in DB
+			// placeholder if/else for DB check
+			
+			String checkUnique = "select sum(login) from Users where login = '%"+desiredName+"%'";
+			ResultSet rs = null;
+			String result = "";
+			System.out.println("Checking if desired username is unique");
+			try {
+			    rs = con.statement.executeQuery(checkUnique);
+			    rs.next();
+			    result = rs.getString("sum(login)");
 			}
-			while (true){
+			catch (Exception e) {}
+			
+			if (result.equals("0")){
+			    System.out.println("Username available!");
+			    
+			    String password = "";
+			    
+			    while (true){
 				System.out.println("Enter password:");
-				String newPass = scanner.nextLine();
+				password = scanner.nextLine();
 				System.out.println("Verify password:");
 				String passVerif = scanner.nextLine();
-				if (newPass.equals(passVerif)){
-					break;
+				if (password.equals(passVerif)){
+				    break;
 				}
 				else {
-					System.out.println("Passwords do not match... Please try again.");
+				    System.out.println("Passwords do not match... Please try again.");
 				}
+			    }
+			    
+			    System.out.println("Please Enter name: ");
+			    String name = scanner.nextLine();
+			    
+			    System.out.println("Please enter address: ");
+			    String address = scanner.nextLine();
+			    
+			    System.out.println("Please enter phone number in the following format ( XXX-XXX-XXXX ): ");
+			    String phone = scanner.nextLine();
+			    
+			    System.out.println("Registering new user...");
+			    
+			    String regNewUser = "insert into Users (login, name, userType, password, user_address, user_phone) values( '%"+desiredName+"%', '%"+name+"%', '%"+1+"%', '%"+password+"%', '%"+address+"%', '%"+phone+"%')";
+			    
+			    // Enter new user into database
+			    try{
+				rs = con.statement.executeQuery(regNewUser);
+				break;
+			    }
+			    catch (Exception e) {}
 			}
-			// Enter new username and password into database
-			
-			
+			else {
+			    System.out.println("Desired username is not available, please try again:");
+			}
+		    }
 		}
 		else {
-			System.out.println("Welcome " + user + ", please enter your password:");
-			String pass = scanner.nextLine();
-			// TODO check pass against db
-			System.out.println("You entered " + pass + ", that's great!");
+		    
+		    while (true)
+			{
+			    System.out.println("Welcome " + user + ", please enter your password:");
+			    String pass = scanner.nextLine();
+			    // TODO check pass against db
+			    
+			    String checkPass = "select login, password from Users where login = '%"+user+"%'";
+			    ResultSet rs = null;
+			    String result1 = "";
+			    String result2 = "";
+			    System.out.println("Attempting to login...");
+			    try {
+				rs = con.statement.executeQuery(checkPass);
+				rs.next();
+				result1 = rs.getString("login");
+				rs.next();
+				result2 = rs.getString("password");
+			    }
+			    catch (Exception e) {}
+			    
+			    if (result1.equals(user) && result2.equals(pass)){
+				System.out.println("Login successful!");
+				break;
+			    }
+			    else{
+				System.out.println("Login unsuccessful, please try again.");
+			    }
+			}
 		}
+		
+		//TODO: Here is where the rest of the project will go
+		
+		con.closeConnection();
 		scanner.close();
 		// user/pass verified or created
+	    } 
+	    catch (Exception e) {
+	    }
 	}
-
 }
