@@ -1,7 +1,7 @@
 package Uotel;
 
 import java.sql.*;
-import java.util.Scanner;
+import java.util.*;
 
 public class User {
 	public User() {
@@ -202,6 +202,148 @@ public class User {
 			System.out.println("Could not record user rating, the following error occurred: ");
 			System.out.println(e.getMessage());
 			return 1;
+		}
+	}
+	
+	//Gets the degrees of separation between two users
+	//Command: $ds
+	public static void degreesOfSeparation(Statement statement, Scanner scanner)
+	{
+		System.out.println("Enter the name of the first user: ");
+		String user1 = scanner.nextLine();
+		System.out.println("Enter the name of the second user: ");
+		String user2 = scanner.nextLine();
+		
+		String findPairs = "select f1.login as login1, f2.login as login2 from Favorites f1, Favorites f2 where "
+				+ "f1.hid = f2.hid and f1.login != f2.login";
+		
+		ResultSet rs = null;
+		Map<String, List<String>> graph = new HashMap<String, List<String>>();
+		Map<String, Integer> indexes = new HashMap<String, Integer>(); 
+		
+		//Build a graph out of the users given and any user that favorited things they favorited as well
+		try {
+			rs = statement.executeQuery(findPairs);
+			
+			while (rs.next())
+			{
+				String n1 = rs.getString("login1");
+				String n2 = rs.getString("login2");
+				
+				if (graph.containsKey(n1))
+				{
+					graph.get(n1).add(n2);
+				}
+				else
+				{
+					graph.put(n1, new ArrayList<String>());	
+					graph.get(n1).add(n2);
+					indexes.put(n1, graph.size()-1);
+				}
+				
+				if (graph.containsKey(n2))
+				{
+					graph.get(n2).add(n1);
+				}
+				else
+				{
+					graph.put(n2, new ArrayList<String>());	
+					graph.get(n2).add(n1);
+					indexes.put(n2, graph.size()-1);
+				}	
+			}
+		}
+		catch (Exception e) {
+			System.out.println("The following error occurred: " + e.getMessage());
+			return;
+		}
+		
+		//Perform a Breadth-First Search on the graph created by the pairs of users
+		//The distance from user1 to user2 will be their degrees of separation
+		String[] prev = new String[graph.size()];
+		int[] dist = new int[graph.size()];
+		
+		for (int i = 0; i < indexes.size(); i++)
+		{
+			prev[i] = null;
+			dist[i] = 2000000;
+		}
+		
+		dist[indexes.get(user1)] = 0;
+		
+		Queue<String> Q = new LinkedList<String>();
+		Q.add(user1);
+		
+		while (Q.size() != 0)
+		{
+			String currentNode = Q.remove();
+			for(String s: graph.get(currentNode))
+			{
+				int index = indexes.get(s);
+				if (dist[index] == 2000000)
+				{
+					Q.add(s);
+					dist[index] = dist[indexes.get(currentNode)] + 1;
+					prev[index] = currentNode;
+				}
+			}
+		}
+		
+		System.out.println("These users are " +dist[indexes.get(user2)]+ " degree(s) apart.");
+	}
+	
+	//Prints out the most trusted and the most useful users
+	//Command: $tu
+	public static void getTopUsers(Statement statement, Scanner scanner)
+	{
+		System.out.println("Please enter a number for how many users you wanted to see the top statistics for: ");
+		int m = Integer.parseInt(scanner.nextLine());
+			
+		String getMostTrusted = "select u.login, u.name, t1.numTrust from Users u, (select t.login2, count(t.login1) as numTrust from Trust t where t.isTrusted = 1 group by t.login2 order by numtrust desc) as t1 where u.login = t1.login2";
+
+		String getMostUseful = "select u.login, u.name, r1.avgrate from Users u, (select r.login, avg(r.rating) as avgrate from Rates r group by r.login order by avgrate desc) as r1 where u.login = r1.login";
+			
+		ResultSet rs = null;
+		List<String> mt = new ArrayList<String>();
+		List<String> mu = new ArrayList<String>();
+			
+		try {
+			rs = statement.executeQuery(getMostTrusted);
+			
+			for (int i = 0; i < m; i++)
+			{
+				if (rs.next())
+				{
+					mt.add((i+1) +".\nUser ID: " + rs.getString("login") + "\nUser Name: " + rs.getString("name") + "\nNumber of Users Who Trust Them: " + rs.getString("numTrust") + "\n");
+				}
+			}
+			
+			rs = statement.executeQuery(getMostUseful);
+			
+			for (int i = 0; i < m; i++)
+			{
+				if (rs.next())
+				{
+					mu.add((i+1) +".\nUser ID: " + rs.getString("login") + "\nUser Name: " + rs.getString("name") + "\nAverage Useful Rating of Feedback: " + rs.getString("avgrate") + "\n");
+				}
+			}
+			
+		}
+		catch (Exception e){
+			System.out.println("The following error occurred: " + e.getMessage());
+			return;
+		}
+			
+		System.out.println("Most Trusted Users: \n");
+		for(String s: mt)
+		{
+			System.out.println(s);
+		}
+			
+		System.out.println("Most Useful Users: \n");
+		for(String s: mu)
+		{
+			System.out.println(s);
 		}
 	}
 }

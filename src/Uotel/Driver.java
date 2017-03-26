@@ -30,25 +30,57 @@ public class Driver {
 	    			System.out.println("$rs - record a stay at a temporary home");
 	    			System.out.println("$f  - leave feedback on a temporary home");
 	    			System.out.println("$t  - create or change a trust rating for another user");
+	    			System.out.println("$gf - get useful feedback for a specific home");
+	    			System.out.println("$ds - get the degrees of separation between two users");
+	    			System.out.println("$st - get a list of the most visited, most expensive, and highest rated homes");
+	    			System.out.println("$tu - get a list of the most trusted and most useful users");
 	    			System.out.println("$exit - exit the application");
 	    			break;
 	    		case "$h":
 	    			TemporaryHome.newTH(con.statement, login, scanner);
+	    			System.out.println();
+	    			System.out.println();
 	    			break;
 	    		case "$rs":
 	    			TemporaryHome.recordStay(con.statement, login, scanner);
+	    			System.out.println();
+	    			System.out.println();
 	    			break;
 	    		case "$f":
 	    			TemporaryHome.recordFeedback(con.statement, login, scanner);
+	    			System.out.println();
+	    			System.out.println();
 	    			break;
 	    		case "$t":
 	    			User.declareTrust(con.statement, login, scanner);
+	    			System.out.println();
+	    			System.out.println();
+	    			break;
+	    		case "$gf":
+	    			for (String r: TemporaryHome.getFeedback(con.statement, scanner))
+	    			{
+	    				System.out.println(r);
+	    				System.out.println();
+	    			}
+	    			System.out.println();
+	    			break;
+	    		case "$ds":
+	    			User.degreesOfSeparation(con.statement, scanner);
+	    			System.out.println();
+	    			break;
+	    		case "$st":
+	    			TemporaryHome.statistics(con.statement, scanner);
+	    			break;
+	    		case "$tu":
+	    			User.getTopUsers(con.statement, scanner);
 	    			break;
 	    		case "$exit":
 	    			System.out.println("Thank you for using Uotel!");
 	    			break loop;
 	    		default:
 	    			System.out.println("Invalid command.");
+	    			System.out.println();
+	    			System.out.println();
 	    			break;
 	    		}
 	    			

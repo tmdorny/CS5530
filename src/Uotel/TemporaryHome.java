@@ -185,4 +185,112 @@ public class TemporaryHome {
 			return 1;
 		}
 	}
+	
+	//Gets the top n useful feedbacks for a TH
+	//Command: $gfhid, 
+	public static List<String> getFeedback(Statement statement, Scanner scanner)
+	{
+		System.out.println("Please enter the ID of the home you wish to access feedback for:");
+		String hid = scanner.nextLine();
+		System.out.println("Please enter a number indicating how many feedback entries you want: ");
+		int n = Integer.parseInt(scanner.nextLine());
+		
+		String q = "select f.hid, f.login, f.score, f.text, f.fbDate from Feedback f, Rates r where "
+				+ "f.fid = r.fid and f.hid = '"+hid+"' and "
+				+ "(select avg(r1.rating) from Rates r1 where r1.fid = f.fid group by r1.fid) >= 1.0";
+		
+		ResultSet rs = null;
+		List<String> results = new ArrayList<String>();
+		
+		try {
+			rs = statement.executeQuery(q);
+			
+			for (int i = 0; i < n; i++)
+			{
+				if (rs.next())
+				{
+					results.add("House ID: " + rs.getString("hid") + "\nUser: " + rs.getString("login") + "\nScore: " + rs.getString("score") + "\nComment: " + rs.getString("text") + "\nDate: " + rs.getString("fbDate"));
+				}
+			}
+		}
+		catch (Exception e) {
+			System.out.println("The following error occurred: " + e.getMessage());
+			return null;
+		}
+		
+		return results;
+	}
+	
+	//Prints out the most visited, most expensive, and highest rated houses
+	//Command: $st
+	public static void statistics(Statement statement, Scanner scanner)
+	{
+		System.out.println("Please enter a number for how many homes you wanted to see the top statistics for: ");
+		int m = Integer.parseInt(scanner.nextLine());
+		
+		String getMostVisited = "select h.hid, h.TH_name, v1.visitors from TH h, (select v.hid, count(v.login) as visitors from Visit v group by v.hid order by visitors desc) as v1 where h.hid = v1.hid";
+
+		String getMostExpensive = "select h.hid, h.TH_name, v1.cost from TH h, (select v.hid, avg(v.cost) as cost from Visit v group by v.hid order by cost desc) as v1 where h.hid = v1.hid";
+		
+		String getHighestRated = "select h.hid, h.TH_name, f1.avgscore from TH h, (select f.hid, avg(f.score) as avgscore from Feedback f group by f.hid order by avgscore desc) as f1 where h.hid = f1.hid";
+		
+		ResultSet rs = null;
+		List<String> mv = new ArrayList<String>();
+		List<String> me = new ArrayList<String>();
+		List<String> hr = new ArrayList<String>();
+		
+		try {
+			rs = statement.executeQuery(getMostVisited);
+			
+			for (int i = 0; i < m; i++)
+			{
+				if (rs.next())
+				{
+					mv.add((i+1) +".\nHouse ID: " + rs.getString("hid") + "\nHouse Name: " + rs.getString("TH_name") + "\nNumber of Visitors: " + rs.getString("visitors") + "\n");
+				}
+			}
+			
+			rs = statement.executeQuery(getMostExpensive);
+			
+			for (int i = 0; i < m; i++)
+			{
+				if (rs.next())
+				{
+					me.add((i+1) +".\nHouse ID: " + rs.getString("hid") + "\nHouse Name: " + rs.getString("TH_name") + "\nAverage Cost: " + rs.getString("cost") + "\n");
+				}
+			}
+			
+			rs = statement.executeQuery(getHighestRated);
+			
+			for (int i = 0; i < m; i++)
+			{
+				if (rs.next())
+				{
+					hr.add((i+1) +".\nHouse ID: " + rs.getString("hid") + "\nHouse Name: " + rs.getString("TH_name") + "\nAverage Score: " + rs.getString("avgscore") + "\n");
+				}
+			}
+		}
+		catch (Exception e){
+			System.out.println("The following error occurred: " + e.getMessage());
+			return;
+		}
+		
+		System.out.println("Most Visited Houses:");
+		for(String s: mv)
+		{
+			System.out.println(s);
+		}
+		
+		System.out.println("Most Expensive Houses:");
+		for(String s: me)
+		{
+			System.out.println(s);
+		}
+		
+		System.out.println("Highest Rated Houses:");
+		for(String s: hr)
+		{
+			System.out.println(s);
+		}
+	}
 }
