@@ -1,15 +1,15 @@
 package Uotel;
 
 import java.sql.ResultSet;
-import java.util.Scanner;
+import java.text.*;
+import java.util.*;
 import java.sql.*;
 
 public class TemporaryHome {
 	
 	public TemporaryHome() {
 	}
-	public static void newTH(Statement statement, String owner) {
-		Scanner scanner = new Scanner(System.in);
+	public static void newTH(Statement statement, String owner, Scanner scanner) {
 		// get hid
 		int hid;
 		String checkUnique = "select count(hid) from TH";
@@ -38,7 +38,7 @@ public class TemporaryHome {
 		catch (Exception e) {
 			System.out.println(e.getMessage());
 		}
-		scanner.close();
+		//scanner.close();
 		return;
 	}
 	
@@ -47,9 +47,18 @@ public class TemporaryHome {
 	//queries in a list, then when a user tries to exit, the main method should prompt 
 	//the user to confirm each stay before executing the queries
 	//If null is returned, an error was encountered
-	public String recordStay(Statement statement, String hid, String from, String to, String username)
+	//Command is $rs
+	public static String recordStay(Statement statement, String username, Scanner scanner)
 	{	
-		String getPid = "select pid from Period where from = '"+from+"' AND to = '"+to+"'";
+		System.out.println("Please enter the ID of the house you stayed in: ");
+	    String hid = scanner.nextLine();
+	    System.out.println("Please enter the start date of your stay (format: YYYY/MM/DD): ");
+	    String from = scanner.nextLine();
+	    System.out.println("Please enter the end date of your stay (format: YYYY/MM/DD): ");
+	    String to = scanner.nextLine();
+	    //scanner.close();
+		
+		String getPid = "select pid from Period where from = "+from+" AND to = "+to;
 		
 		//Find pid of period of stay
 		ResultSet rs = null;
@@ -101,20 +110,36 @@ public class TemporaryHome {
 	//When called, allows a user to record feedback in the database
 	//date should just be todays date when called from the main method
 	//score should be 0-10 inclusive
-	//text should be less than 100 chars (handle in main method)
+	//text should be less than 100 chars
 	//Returns status code 0 - okay, 1 - error
-	//****NOTE: database needs to be updated so that Feedback can store a score variable**** 
-	public int recordFeedback(Statement statement, String username, String hid, String date, String score, String text)
+	//Command is $f
+	public static int recordFeedback(Statement statement, String username, Scanner scanner)
 	{
+		System.out.println("Please enter the ID of the house to review: ");
+	    String hid = scanner.nextLine();
+		String date = new SimpleDateFormat("yyyy/MM/dd").format(new java.util.Date());
+		System.out.println("Please enter a numerical score for the house (0-10, with 10 being the best score): ");
+	    String score = scanner.nextLine();
+		System.out.println("If you want, enter a short review of the house (less than 100 characters). Press enter when done: ");
+	    String text = scanner.nextLine();
+	    //scanner.close();
+		
+	    while (text.length() > 100)
+	    {
+	    	int chars = text.length() - 100;
+	    	System.out.println("Too many characters ("+chars+" too many), please try again:");
+	    	text = scanner.nextLine();
+	    }
+		
 		//Find if user has already left feedback on this TH
-		String findFeedback = "select fid from Feedback where login = '"+username+"' AND hid = '"+hid+"'";
+		String findFeedback = "select count(fid) from Feedback where login = '"+username+"' AND hid = '"+hid+"'";
 		ResultSet rs = null;
 		String fid;
 		
 		try {
 			rs = statement.executeQuery(findFeedback);
 			rs.next();
-			fid = rs.getString("fid");	
+			fid = rs.getString("count(fid)");	
 		}
 		catch (Exception e) {
 			System.out.println("The following error occurred when checking Feedback: ");
@@ -122,7 +147,7 @@ public class TemporaryHome {
 			return 1;
 		}
 		
-		if (fid != null)
+		if (!fid.equals("0"))
 		{
 			System.out.println("You have already left feedback on this house.");
 			return 1;
@@ -156,86 +181,6 @@ public class TemporaryHome {
 		}
 		catch (Exception e) {
 			System.out.println("Could not record feedback, the following error occurred: ");
-			System.out.println(e.getMessage());
-			return 1;
-		}
-	}
-	
-	//When called, will add a trust rating to the Trust table of the database
-	//Main method will pass in a boolean to denote whether or not the current user trusts the user they entered
-	//Returns status code 0 - okay, 1 - error
-	public int declareTrust(Statement statement, String currentUser, String userToJudge, boolean isTrusted)
-	{
-		//Verify the username entered is valid
-		String findUser2 = "select login from Users where login = '"+userToJudge+"'";
-		ResultSet rs = null;
-		String user2;
-		try {
-			rs = statement.executeQuery(findUser2);
-			rs.next();
-			user2 = rs.getString("login");
-		}
-		catch (Exception e) {
-			System.out.println("The following error occurred when searching for the user entered:");
-			System.out.println(e.getMessage());
-			return 1;
-		}
-		
-		if (user2 == null)
-		{
-			System.out.println("The user entered could not be found.");
-			return 1;
-		}
-		
-		
-		//Check if we have already rated a user, and if so, change the ranking to what was given
-		String findTrust = "select login2 from Trust where login1 = '"+currentUser+"' AND login2 = '"+userToJudge+"'";
-		String userJudged;
-		
-		try {
-			rs = statement.executeQuery(findTrust);
-			rs.next();
-			userJudged = rs.getString("login2");	
-		}
-		catch (Exception e) {
-			System.out.println("The following error occurred when searching Trust ratings: ");
-			System.out.println(e.getMessage());
-			return 1;
-		}
-		
-		//Convert isTrusted to a string
-		String rating;
-		if (isTrusted)
-		{
-			rating = "1";
-		}
-		else
-		{
-			rating = "0";
-		}
-		
-		String rateUser = "";
-		if (userJudged == null)
-		{
-			//Add new trust rating
-			rateUser = "insert into Trust (login1, login2, isTrusted) values( '"+currentUser+"', '"+userToJudge+"', '"+rating+"')";
-		}
-		else if (userJudged.equals(userToJudge))
-		{
-			//Modify existing rating
-			rateUser = "update Trust set isTrusted = '"+rating+"' where login1 = '"+currentUser+"' AND login2 = '"+userToJudge+"'";
-		}
-		else
-		{
-			System.out.println("An error occurred when ranking other user.");
-		}
-		
-		try {
-			int statusCode = statement.executeUpdate(rateUser);
-			return 0;
-		}
-		catch (Exception e) {
-			System.out.println("Could not record user rating, the following error occurred: ");
 			System.out.println(e.getMessage());
 			return 1;
 		}
