@@ -16,7 +16,10 @@ public class Driver {
 	    	Scanner scanner = new Scanner(System.in);
 		
 	    	// Login / register // login variable contains the login field of the currently logged in user
-	    	String login = User.loginRegister(con.statement, scanner);
+	    	String login = "";
+	    	while (login.equals("")) {
+	    		login = User.loginRegister(con.statement, scanner);
+	    	}
 
 	    	//TODO: Here is where the rest of the project will go
 	    	loop: while (true) {
@@ -26,18 +29,40 @@ public class Driver {
 	    			// list of commands
 	    		case "$command":
 	    			System.out.println("Commands:");
+	    			System.out.println("$up - update the cost and available dates of a temporary home");
 	    			System.out.println("$h  - register a new temporary home");
+	    			System.out.println("$r  - make a reservation at a temporary home");
 	    			System.out.println("$rs - record a stay at a temporary home");
+	    			System.out.println("$b  - browse available temporary homes");
 	    			System.out.println("$f  - leave feedback on a temporary home");
+	    			System.out.println("$fav - add a temporary home to your favorites");
 	    			System.out.println("$t  - create or change a trust rating for another user");
 	    			System.out.println("$gf - get useful feedback for a specific home");
+	    			System.out.println("$vf - view and rate feedback for a temporary home");
 	    			System.out.println("$ds - get the degrees of separation between two users");
 	    			System.out.println("$st - get a list of the most visited, most expensive, and highest rated homes");
 	    			System.out.println("$tu - get a list of the most trusted and most useful users");
+	    			System.out.println("$sug - get a list of suggested TH based on interest in certain TH");
 	    			System.out.println("$exit - exit the application");
+	    			break;
+	    		case "$up":
+	    			System.out.println("Which temporary home would you like to update? (enter hid) :");
+	    			int hid = Integer.parseInt(scanner.nextLine());
+	    			TemporaryHome.updateTH(con.statement, login, hid, scanner);
+	    			System.out.println();
+	    			System.out.println();
 	    			break;
 	    		case "$h":
 	    			TemporaryHome.newTH(con.statement, login, scanner);
+	    			System.out.println();
+	    			System.out.println();
+	    			break;
+	    		case "$r":
+	    			System.out.println("Which temporary home would you like to make a reservation to? (enter hid) :");
+	    			int reserveHid = Integer.parseInt(scanner.nextLine());
+	    			System.out.println("How many nights will you be staying? :");
+	    			int nights = Integer.parseInt(scanner.nextLine());
+	    			TemporaryHome.reserveTH(con.statement, reserveHid, login, nights, scanner);
 	    			System.out.println();
 	    			System.out.println();
 	    			break;
@@ -46,8 +71,18 @@ public class Driver {
 	    			System.out.println();
 	    			System.out.println();
 	    			break;
+	    		case "$b":
+	    			TemporaryHome.browse(con.statement, login, scanner);
+	    			System.out.println();
+	    			System.out.println();
+	    			break;
 	    		case "$f":
 	    			TemporaryHome.recordFeedback(con.statement, login, scanner);
+	    			System.out.println();
+	    			System.out.println();
+	    			break;
+	    		case "$fav":
+	    			User.addFavorite(con.statement, login, scanner);
 	    			System.out.println();
 	    			System.out.println();
 	    			break;
@@ -64,6 +99,10 @@ public class Driver {
 	    			}
 	    			System.out.println();
 	    			break;
+	    		case "$vf":
+	    			TemporaryHome.viewFeedback(con.statement, login, scanner);
+	    			System.out.println();
+	    			break;
 	    		case "$ds":
 	    			User.degreesOfSeparation(con.statement, scanner);
 	    			System.out.println();
@@ -73,6 +112,9 @@ public class Driver {
 	    			break;
 	    		case "$tu":
 	    			User.getTopUsers(con.statement, scanner);
+	    			break;
+	    		case "$sug":
+	    			TemporaryHome.getSuggestions(con.statement, scanner);
 	    			break;
 	    		case "$exit":
 	    			System.out.println("Thank you for using Uotel!");
@@ -85,6 +127,7 @@ public class Driver {
 	    		}
 	    			
 	    	}
+	    	System.out.println("Thank you for using Uotel!");
 	    	con.closeConnection();
 	    	scanner.close();
 	    } 

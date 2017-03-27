@@ -8,7 +8,7 @@ public class User {
 	}
 
 	public static String loginRegister(Statement statement, Scanner scanner) {
-		System.out.println("Enter $login for existing users or enter $r to register new user:");
+		System.out.println("Enter login for existing users or enter $r to register new user:");
 		String user = scanner.nextLine();
 
 		// New user registration
@@ -120,13 +120,36 @@ public class User {
 			    }
 			    else{
 			    	System.out.println("Login unsuccessful, please try again.");
-			    	//scanner.close();
-			    	return "";
 			    }
 			}
 		}
-		//scanner.close();
 		return "";
+	}
+	
+	public static void addFavorite(Statement statement, String user, Scanner scanner) {
+		System.out.println("Enter name of temporary home you would like to add to your favorites:");
+		int hid = TemporaryHome.getHid(statement, scanner.nextLine());
+		
+		String getDate = "select CURDATE()";
+		String date = "";
+	    try{
+			ResultSet rs = statement.executeQuery(getDate);
+			rs.next();
+			date = rs.getString("CURDATE()");
+		}
+		catch (Exception e) {
+			System.out.println("Could not add favorite, the following error occurred: ");
+			System.out.println(e.getMessage());
+		}
+		
+		String addFavorite = "insert into Favorites (hid, login, fvdate) values( '"+hid+"', '"+user+"', '"+date+"')";
+	    try{
+			statement.executeUpdate(addFavorite);
+		}
+		catch (Exception e) {
+			System.out.println("Could not add favorite, the following error occurred: ");
+			System.out.println(e.getMessage());
+		}
 	}
 	
 	//When called, will add a trust rating to the Trust table of the database
@@ -195,7 +218,7 @@ public class User {
 		}
 		
 		try {
-			int statusCode = statement.executeUpdate(rateUser);
+			statement.executeUpdate(rateUser);
 			return 0;
 		}
 		catch (Exception e) {
