@@ -10,20 +10,20 @@ public class TemporaryHome {
 	static int globalWid = 0;
 	public TemporaryHome() {
 	}
-	public static int getHid(Statement statement, String name){
+	public static String getHid(Statement statement, String name){
 		String fromName = "select hid from TH where TH_name='"+name + "'";
 		try {
 			ResultSet rs = statement.executeQuery(fromName);
 			rs.next();
-			return rs.getInt("hid");	
+			return "The house listed as '" + name + "' has ID of " + rs.getString("hid");	
 		}
 		catch (Exception e) {
-			System.out.println("The following error occurred when checking ownership: ");
-			System.out.println(e.getMessage());
-			return -1;
+			//System.out.println("The following error occurred when checking ownership: ");
+			//System.out.println(e.getMessage());
+			return "The following error occurred: " + e.getMessage();
 		}
 	}
-	public static void newTH(Statement statement, String owner, Scanner scanner) {
+	public static String newTH(Statement statement, String owner, Scanner scanner) {
 		// get hid
 		int hid;
 		String checkUnique = "select count(hid) from TH";
@@ -34,6 +34,7 @@ public class TemporaryHome {
 			hid = Integer.parseInt(rs.getString("count(hid)"));
 			// Fill the rest of the fields from user input
 			// register TH
+			//TODO: these inputs should be taken in by forms on the jsp page
 		    System.out.println("Please Enter House Category (Home/Apartment/Duplex): ");
 		    String category = scanner.nextLine();
 		    System.out.println("Please Enter House Name: ");
@@ -50,12 +51,13 @@ public class TemporaryHome {
 			statement.executeUpdate(regNewTH);
 		}
 		catch (Exception e) {
-			System.out.println(e.getMessage());
+			//System.out.println(e.getMessage());
+			return "The following error ocurred: " + e.getMessage();
 		}
 		//scanner.close();
-		return;
+		return "Temporary home successfully added!";
 	}
-	public static void addKeyword (Statement statement, int hid, Scanner scanner) {
+	public static String addKeyword (Statement statement, int hid, Scanner scanner) {
 		
 		// Get wid
 		String checkUnique = "select MAX(wid) from Keywords";
@@ -70,6 +72,7 @@ public class TemporaryHome {
 			System.out.println(e.getMessage());
 		}
 		
+		//TODO: these inputs should be taken in by the jsp page
 		System.out.println("Enter the desired keyword:");
 		String keyword = scanner.nextLine();
 		System.out.println("Enter the keyword language:");
@@ -81,11 +84,13 @@ public class TemporaryHome {
 			statement.executeUpdate(hasKeyword);
 		}
 		catch (Exception e) {
-			System.out.println(e.getMessage());
+			//System.out.println(e.getMessage());
+			return "The following error ocurred: " + e.getMessage();
 		}
+		return "Keyword sucessfully added!";
 	}
 	// Allows a user to update the price and/or availability for one of their registered homes
-	public static void updateTH(Statement statement, String owner, int hid, Scanner scanner) {
+	public static String updateTH(Statement statement, String owner, int hid, Scanner scanner) {
 		// check that th is registered to user
 		String checkOwner = "select owner From TH Where hid= " + hid;
 		//Find the registered owner of TH
@@ -98,9 +103,9 @@ public class TemporaryHome {
 			registeredOwner = rs.getString("owner");	
 		}
 		catch (Exception e) {
-			System.out.println("The following error occurred when checking ownership: ");
-			System.out.println(e.getMessage());
-			return;
+			//System.out.println("The following error occurred when checking ownership: ");
+			//System.out.println(e.getMessage());
+			return "The following error ocurred when checking ownership: " + e.getMessage();
 		}
 		if (registeredOwner.equals(owner)){
 			// Proceed with update
@@ -125,8 +130,9 @@ public class TemporaryHome {
 		    			statement.executeUpdate(availableQuery);
 		    		}
 		    		catch (Exception e) {
-		    			System.out.println("Could not add availability period, the following error occurred: ");
-		    			System.out.println(e.getMessage());
+		    			//System.out.println("Could not add availability period, the following error occurred: ");
+		    			//System.out.println(e.getMessage());
+		    			return "The following error ocurred when adding availability period: " + e.getMessage();
 		    		}
 		    	}
 		    }
@@ -138,11 +144,12 @@ public class TemporaryHome {
 		    }
 		}
 		else {
-			System.out.println("You do not own this temporary home!");
-			return;
+			//System.out.println("You do not own this temporary home!");
+			return "You do not own this temporary home!";
 		}
-		return;
+		return "Availability successfully updated!";
 	}
+	
 	// Updates the Period table with the specified start and end dates, returns the corresponding pid
 	public static int addAvailabilityWindow(Statement statement, String start, String end) {
 		
@@ -170,22 +177,26 @@ public class TemporaryHome {
 		}
 		return pid;
 	}
+	
 	// Gives suggestions based on what THs users who have also visited the specified hid have visited, 
 	// suggestions are listed in order based on how many users have visited both THs (where user is staying and suggested TH)
-	public static void getSuggestions(Statement statement, Scanner scanner) {
+	public static String getSuggestions(Statement statement, Scanner scanner) {
 		System.out.println("Enter the hid of a temporary home you'd like to receive suggestions similar to: ");
 		int hid = Integer.parseInt(scanner.nextLine());
 		String getSuggestions = "select h.hid, count(v.login) as Visits From Visit v, (select login From Visit Where hid=" + hid +") as s where v.login=s.login";
 		ResultSet rs = null;
+		String returnString = "";
 		try {
 			rs = statement.executeQuery(getSuggestions);
 			while (rs.next()) {
-				System.out.println("Suggested TH hid: " + rs.getString("hid"));
+				returnString = returnString + "Suggested TH hid: " + rs.getString("hid") + "\n";
 			}
 		}
 		catch (Exception e) {
-			System.out.println(e.getMessage());
+			//System.out.println(e.getMessage());
+			return "The following error ocurred: " + e.getMessage();
 		}
+		return returnString;
 	}
 	
 	// Sets up a reservation, updates the available dates of a TH and adds the reservation to the database.
@@ -305,7 +316,7 @@ public class TemporaryHome {
 	    }
 	}
 	    
-    public static void finishReserveTH(Statement statement, String reserveString, String user, Scanner scanner){
+    public static String finishReserveTH(Statement statement, String reserveString, String user, Scanner scanner){
 	    // Update the period table with new dates
     	String[] split = reserveString.split("\\s+");
     	
@@ -322,7 +333,7 @@ public class TemporaryHome {
     	String response = scanner.nextLine();
     	if (response.equals("n"))
     	{
-    		return;
+    		return "Reservation Canceled";
     	}
     	
 	    String deletePeriod = "delete from Period where pid=" + windowPid;
@@ -330,9 +341,11 @@ public class TemporaryHome {
 			statement.executeUpdate(deletePeriod);
 		}
 		catch (Exception e) {
-			System.out.println("Could not delete from period, the following error occurred: ");
-			System.out.println(e.getMessage());
+			//System.out.println("Could not delete from period, the following error occurred: ");
+			//System.out.println(e.getMessage());
+			return "The following error ocurred when updating period table: " + e.getMessage();
 		}
+	    
 	    int queryPid;
 	    String availableQuery;
 	    // if start date is not at the beginning of the window
@@ -346,8 +359,9 @@ public class TemporaryHome {
 	    			statement.executeUpdate(availableQuery);
 	    		}
 	    		catch (Exception e) {
-	    			System.out.println("Could not add time period, the following error occurred: ");
-	    			System.out.println(e.getMessage());
+	    			//System.out.println("Could not add time period, the following error occurred: ");
+	    			//System.out.println(e.getMessage());
+	    			return "The following error ocurred when adding period: " + e.getMessage();
 	    		}
 	    		
 	    		queryPid = addAvailabilityWindow(statement, endDate, aEndDate);
@@ -356,8 +370,9 @@ public class TemporaryHome {
 	    			statement.executeUpdate(availableQuery);
 	    		}
 	    		catch (Exception e) {
-	    			System.out.println("Could not add time period, the following error occurred: ");
-	    			System.out.println(e.getMessage());
+	    			//System.out.println("Could not add time period, the following error occurred: ");
+	    			//System.out.println(e.getMessage());
+	    			return "The following error ocurred when adding period: " + e.getMessage();
 	    		}
 	    		
 	    	}
@@ -369,8 +384,9 @@ public class TemporaryHome {
 	    			statement.executeUpdate(availableQuery);
 	    		}
 	    		catch (Exception e) {
-	    			System.out.println("Could not add time period, the following error occurred: ");
-	    			System.out.println(e.getMessage());
+	    			//System.out.println("Could not add time period, the following error occurred: ");
+	    			//System.out.println(e.getMessage());
+	    			return "The following error ocurredwhen adding period: " + e.getMessage();
 	    		}
 	    	}
 	    }
@@ -382,8 +398,9 @@ public class TemporaryHome {
     			statement.executeUpdate(availableQuery);
     		}
     		catch (Exception e) {
-    			System.out.println("Could not add time period, the following error occurred: ");
-    			System.out.println(e.getMessage());
+    			//System.out.println("Could not add time period, the following error occurred: ");
+    			//System.out.println(e.getMessage());
+    			return "The following error ocurred when adding period: " + e.getMessage();
     		}
 	    }
 	    queryPid = addAvailabilityWindow(statement, startDate, endDate);
@@ -393,9 +410,12 @@ public class TemporaryHome {
 			statement.executeUpdate(addReserve);
 		}
 		catch (Exception e) {
-			System.out.println("Could not add reservation, the following error occurred: ");
-			System.out.println(e.getMessage());
+			//System.out.println("Could not add reservation, the following error occurred: ");
+			//System.out.println(e.getMessage());
+			return "The following error ocurred when adding reservation: " + e.getMessage();
 		}
+	    
+	    return "Reservation successfully created!";
 	}
 	
 	//The user will enter the hid of the TH they stayed at and the dates during which they stayed
