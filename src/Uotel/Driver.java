@@ -1,5 +1,6 @@
 package Uotel;
 
+import java.util.*;
 import java.util.Scanner;
 //import java.sql.*;
 //import java.io.*;
@@ -8,7 +9,8 @@ public class Driver {
 	
 	public static void main(String[] args){
 	    System.out.println("Welcome to Uotel!");
-
+	    List<String> reserveStrings = new ArrayList<String>();
+	    List<String> stayStrings = new ArrayList<String>();
 	    
 	    try {
 	    	Connector con = new Connector();
@@ -62,12 +64,19 @@ public class Driver {
 	    			int reserveHid = Integer.parseInt(scanner.nextLine());
 	    			System.out.println("How many nights will you be staying? :");
 	    			int nights = Integer.parseInt(scanner.nextLine());
-	    			TemporaryHome.reserveTH(con.statement, reserveHid, login, nights, scanner);
+	    			String reserveString = TemporaryHome.startReserveTH(con.statement, reserveHid, login, nights, scanner);
+	    			if (reserveString != ""){
+	    				reserveStrings.add(reserveString);
+	    			}
 	    			System.out.println();
 	    			System.out.println();
 	    			break;
 	    		case "$rs":
-	    			TemporaryHome.recordStay(con.statement, login, scanner);
+	    			String stayQ = TemporaryHome.recordStay(con.statement, login, scanner);
+	    			if (stayQ != null)
+	    			{
+	    				stayStrings.add(stayQ);
+	    			}
 	    			System.out.println();
 	    			System.out.println();
 	    			break;
@@ -117,6 +126,16 @@ public class Driver {
 	    			TemporaryHome.getSuggestions(con.statement, scanner);
 	    			break;
 	    		case "$exit":
+	    			for(String r: reserveStrings)
+	    			{
+	    				TemporaryHome.finishReserveTH(con.statement, r, login, scanner);
+	    			}
+	    			
+	    			for (String q: stayStrings)
+	    			{
+	    				TemporaryHome.finishRecordStay(con.statement, q, scanner);
+	    			}
+	    			
 	    			System.out.println("Thank you for using Uotel!");
 	    			break loop;
 	    		default:
@@ -127,7 +146,7 @@ public class Driver {
 	    		}
 	    			
 	    	}
-	    	System.out.println("Thank you for using Uotel!");
+	    	//System.out.println("Thank you for using Uotel!");
 	    	con.closeConnection();
 	    	scanner.close();
 	    } 

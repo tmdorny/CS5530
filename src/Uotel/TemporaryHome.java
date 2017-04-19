@@ -1,9 +1,9 @@
 package Uotel;
 
-import java.sql.ResultSet;
 import java.text.*;
 import java.util.*;
 import java.sql.*;
+import java.util.Date;
 
 public class TemporaryHome {
 	static int pid = 0;
@@ -187,8 +187,9 @@ public class TemporaryHome {
 			System.out.println(e.getMessage());
 		}
 	}
+	
 	// Sets up a reservation, updates the available dates of a TH and adds the reservation to the database.
-	public static String reserveTH(Statement statement, int hid, String user, int nights, Scanner scanner) {
+	public static String startReserveTH(Statement statement, int hid, String user, int nights, Scanner scanner) {
 		
 		String getPids = "select pid, price_per_night From Available Where hid= " + hid;
 		ResultSet rs = null;
@@ -219,6 +220,15 @@ public class TemporaryHome {
 			System.out.println(e.getMessage());
 			return "";
 		}
+		
+		for (int i: availableDates.keySet())
+		{
+			System.out.print(availableDates.get(i).substring(0, 10));
+			System.out.print(" - ");
+			System.out.print(availableDates.get(i).substring(10,20));
+			System.out.println();
+		}
+		
 		// User can select a window from the displayed available dates
 		System.out.println("Please Enter Desired Start Date (YYYY-MM-DD): ");
 	    String startDate = scanner.nextLine();
@@ -227,14 +237,44 @@ public class TemporaryHome {
 	    // Determine which date window the desired dates fall into
 	    // pid of the window in which the desired dates fall into
 	    int windowPid = -1;
+	    
+	    int startYear = Integer.parseInt(startDate.substring(0, 4));
+	    int startMonth = Integer.parseInt(startDate.substring(5, 7));
+	    int startDay = Integer.parseInt(startDate.substring(8));
+	    int endYear = Integer.parseInt(endDate.substring(0, 4));
+	    int endMonth = Integer.parseInt(endDate.substring(5, 7));
+	    int endDay = Integer.parseInt(endDate.substring(8));
+	    
+	    Date start = new Date(startYear, startMonth, startDay);
+	    Date end = new Date(endYear, endMonth, endDay);
+	    
+	    
 	    // Apologies for this mess, was unable to come up with a more elegant solution here
 	    for (int j : availableDates.keySet()) {
-	    	// Compare start years
-	    	if (Integer.parseInt(startDate.substring(0, 4)) - Integer.parseInt(availableDates.get(j).substring(0, 4)) >= 0) {
-	    		// Compare start months
-	    		if (Integer.parseInt(startDate.substring(5, 7)) - Integer.parseInt(availableDates.get(j).substring(5, 7)) >= 0) {
+	    	int aStartYear = Integer.parseInt(availableDates.get(j).substring(0, 4));
+			int aStartMonth = Integer.parseInt(availableDates.get(j).substring(5, 7));
+			int aStartDay = Integer.parseInt(availableDates.get(j).substring(8, 10));
+			int aEndYear = Integer.parseInt(availableDates.get(j).substring(10, 14));
+			int aEndMonth = Integer.parseInt(availableDates.get(j).substring(15, 17));
+			int aEndDay = Integer.parseInt(availableDates.get(j).substring(18));
+			
+			Date aStart = new Date(aStartYear, aStartMonth, aStartDay);
+			Date aEnd = new Date(aEndYear, aEndMonth, aEndDay);
+			
+			if (start.compareTo(aStart) >= 0 && end.compareTo(aEnd) <= 0)
+			{
+				windowPid = j;
+			}
+	    	
+			/*
+	    	// Check if stay is within available years
+	    	if (startYear - aStartYear >= 0 && aEndYear - endYear >= 0) {
+	    		
+	    		// If stay is within available years, check if stay is within available months
+	    		if (startMonth - aStartMonth >= 0 || ) {
+	    			pastStartMonth = (startMonth - aStartMonth > 0);
 	    			// Compare start days
-	    			if (Integer.parseInt(startDate.substring(8)) - Integer.parseInt(availableDates.get(j).substring(8, 10)) >= 0) {
+	    			if (startDay - aStartDay >= 0) {
 	    				// Compare End years
 	    				if (Integer.parseInt(availableDates.get(j).substring(10, 14)) - Integer.parseInt(endDate.substring(0, 4)) >= 0) {
 	    					// Compare End months
@@ -248,10 +288,43 @@ public class TemporaryHome {
 	    				}
 	    			}
 	    		}
-	    	}
+	    	} */
 	    }
 	    // END DISASTER
+	    
+	    if (windowPid == -1)
+	    {
+	    	System.out.println("Requested dates are not available.");
+	    	return "";
+	    }
+	    else
+	    {
+	    	return startDate + " " + endDate + " " + availableDates.get(windowPid).substring(0, 10) 
+	    					 + " " + availableDates.get(windowPid).substring(10) + " " 
+	    					 + windowPid + " " + hid + " " + price + " " + nights;
+	    }
+	}
+	    
+    public static void finishReserveTH(Statement statement, String reserveString, String user, Scanner scanner){
 	    // Update the period table with new dates
+    	String[] split = reserveString.split("\\s+");
+    	
+    	String startDate = split[0];
+    	String endDate = split[1];
+    	String aStartDate = split[2];
+    	String aEndDate = split[3];
+    	int windowPid = Integer.parseInt(split[4]);
+    	int hid = Integer.parseInt(split[5]);
+    	int price = Integer.parseInt(split[6]);
+    	int nights = Integer.parseInt(split[7]);
+    	
+    	System.out.println("Confirm Reservation at Home " + hid + " from " + startDate + " to " + endDate + " ? (y/n)");
+    	String response = scanner.nextLine();
+    	if (response.equals("n"))
+    	{
+    		return;
+    	}
+    	
 	    String deletePeriod = "delete from Period where pid=" + windowPid;
 	    try{
 			statement.executeUpdate(deletePeriod);
@@ -263,11 +336,11 @@ public class TemporaryHome {
 	    int queryPid;
 	    String availableQuery;
 	    // if start date is not at the beginning of the window
-	    if (!startDate.equals(availableDates.get(windowPid).substring(0, 10))) {
+	    if (!startDate.equals(aStartDate)) {
 	    	// if end date is not at end of window and start date is not at start of window
-	    	if (!endDate.equals(availableDates.get(windowPid).substring(10))) {
+	    	if (!endDate.equals(aEndDate)) {
 	    		
-	    		queryPid = addAvailabilityWindow(statement, availableDates.get(windowPid).substring(0, 10), startDate);
+	    		queryPid = addAvailabilityWindow(statement, aStartDate, startDate);
 	    		availableQuery = "insert into Available (hid, pid, price_per_night) values( '"+hid+"', '"+queryPid+"', '"+price+"')";
 	    		try{
 	    			statement.executeUpdate(availableQuery);
@@ -277,7 +350,7 @@ public class TemporaryHome {
 	    			System.out.println(e.getMessage());
 	    		}
 	    		
-	    		queryPid = addAvailabilityWindow(statement, endDate, availableDates.get(windowPid).substring(10));
+	    		queryPid = addAvailabilityWindow(statement, endDate, aEndDate);
 	    		availableQuery = "insert into Available (hid, pid, price_per_night) values( '"+hid+"', '"+queryPid+"', '"+price+"')";
 	    		try{
 	    			statement.executeUpdate(availableQuery);
@@ -290,7 +363,7 @@ public class TemporaryHome {
 	    	}
 	    	// if end date is not at end of window and start date is at start of window
 	    	else {
-	    		queryPid = addAvailabilityWindow(statement, availableDates.get(windowPid).substring(0, 10), startDate);
+	    		queryPid = addAvailabilityWindow(statement, aStartDate, startDate);
 	    		availableQuery = "insert into Available (hid, pid, price_per_night) values( '"+hid+"', '"+queryPid+"', '"+price+"')";
 	    		try{
 	    			statement.executeUpdate(availableQuery);
@@ -302,8 +375,8 @@ public class TemporaryHome {
 	    	}
 	    }
 	    // if start date lines up with window but end date does not
-	    else if (!endDate.equals(availableDates.get(windowPid).substring(10, 19))) {
-	    	queryPid = addAvailabilityWindow(statement, endDate, availableDates.get(windowPid).substring(10));
+	    else if (!endDate.equals(aEndDate.substring(0, 9))) {
+	    	queryPid = addAvailabilityWindow(statement, endDate, aEndDate);
 	    	availableQuery = "insert into Available (hid, pid, price_per_night) values( '"+hid+"', '"+queryPid+"', '"+price+"')";
     		try{
     			statement.executeUpdate(availableQuery);
@@ -323,7 +396,6 @@ public class TemporaryHome {
 			System.out.println("Could not add reservation, the following error occurred: ");
 			System.out.println(e.getMessage());
 		}
-		return "";
 	}
 	
 	//The user will enter the hid of the TH they stayed at and the dates during which they stayed
@@ -340,9 +412,8 @@ public class TemporaryHome {
 	    String from = scanner.nextLine();
 	    System.out.println("Please enter the end date of your stay (format: YYYY/MM/DD): ");
 	    String to = scanner.nextLine();
-	    //scanner.close();
 		
-		String getPid = "select pid from Period where from = "+from+" AND to = "+to;
+		String getPid = "select pid from Period where start = '"+from+"' AND end = '"+to+"'";
 		
 		//Find pid of period of stay
 		ResultSet rs = null;
@@ -386,8 +457,31 @@ public class TemporaryHome {
 		}
 		else
 		{
-			String recordStayQuery = "insert into Visit (login, hid, pid, cost) values( '"+username+"', '"+hid+"', '"+pid+"', '"+cost+"')";
+			String recordStayQuery = hid + "insert into Visit (login, hid, pid, cost) values( '"+username+"', '"+hid+"', '"+pid+"', '"+cost+"')";
 			return recordStayQuery;
+		}
+	}
+	
+	public static void finishRecordStay(Statement statement, String query, Scanner scanner)
+	{
+		int hid = Integer.parseInt(query.substring(0, 1));
+		String q = query.substring(1); 
+		System.out.println("Confirm Stay at Home " + hid +"? (y/n)");
+    	String response = scanner.nextLine();
+    	if (response.equals("n"))
+    	{
+    		return;
+    	}
+		
+		int result = 0;
+		try
+		{
+			result = statement.executeUpdate(q);
+		}
+		catch (Exception e)
+		{
+			System.out.println("The following error occurred when recording stay: ");
+			System.out.println(e.getMessage());
 		}
 	}
 	
