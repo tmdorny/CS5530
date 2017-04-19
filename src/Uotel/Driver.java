@@ -20,7 +20,7 @@ public class Driver {
 	    	// Login / register // login variable contains the login field of the currently logged in user
 	    	String login = "";
 	    	while (login.equals("")) {
-	    		login = User.loginRegister(con.statement, scanner);
+	    		//login = User.loginRegister(con.statement, scanner);
 	    	}
 
 	    	//TODO: Here is where the rest of the project will go
