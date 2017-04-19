@@ -45,7 +45,7 @@ public class Driver {
 	    			System.out.println("$st - get a list of the most visited, most expensive, and highest rated homes");
 	    			System.out.println("$tu - get a list of the most trusted and most useful users");
 	    			System.out.println("$sug - get a list of suggested TH based on interest in certain TH");
-	    			System.out.println("$exit - exit the application");
+	    			System.out.println("$exit - exit the application (must confirm any reservations or recorded stays before exiting");
 	    			break;
 	    		case "$up":
 	    			System.out.println("Which temporary home would you like to update? (enter hid) :");
